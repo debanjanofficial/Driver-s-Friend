@@ -1,5 +1,5 @@
-from database.operations import DatabaseOperations
-from models.regulation import Regulation
+from backend.database.operations import DatabaseOperations
+from backend.models.regulation import Regulation
 from datetime import datetime
 
 def insert_sample_regulations():

@@ -1,3 +1,6 @@
+from pymongo import MongoClient
+from backend.models.regulation import Regulation
+
 class DatabaseOperations:
     def __init__(self):
         self.client = MongoClient('mongodb://localhost:27017/')

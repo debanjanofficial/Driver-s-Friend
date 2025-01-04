@@ -1,7 +1,7 @@
-# backend/tests/test_database.py
 import pytest
-from database.operations import DatabaseOperations
-from models.regulation import Regulation
+from backend.database.operations import DatabaseOperations
+from backend.models.regulation import Regulation
+from datetime import datetime
 
 def test_database_connection():
     db_ops = DatabaseOperations()

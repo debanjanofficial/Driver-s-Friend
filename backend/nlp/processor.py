@@ -1,3 +1,5 @@
+import spacy
+
 class LanguageProcessor:
     def __init__(self):
         self.nlp_en = spacy.load('en_core_web_sm')

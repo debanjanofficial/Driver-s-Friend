@@ -1,3 +1,7 @@
+from pymongo import MongoClient
+import os
+from datetime import datetime
+
 class DataCollector:
     def __init__(self):
         self.db = MongoClient(os.getenv('MONGODB_URI'))
