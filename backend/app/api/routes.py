@@ -1,35 +1,23 @@
-from fastapi import APIRouter, Depends
-from .models import ChatRequest, ChatResponse
-from ..nlp.processor import LanguageProcessor
-from ..nlp.intent_classifier import IntentClassifier
-from ..nlp.response_generator import ResponseGenerator
-from ..database.operations import DatabaseOperations
+from fastapi import APIRouter, HTTPException
+from app.api.models import ChatRequest, ChatResponse
+from app.services.chat_service import ChatService
 
 router = APIRouter()
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
-    # Process the incoming message
-    nlp_processor = LanguageProcessor()
-    processed_text = nlp_processor.process_text(request.message, request.language)
-    
-    # Classify intent
-    intent_classifier = IntentClassifier()
-    intent = intent_classifier.predict(processed_text)
-    
-    # Generate response
-    db_ops = DatabaseOperations()
-    response_gen = ResponseGenerator(db_ops)
-    response = response_gen.generate_response(intent, request.language)
-    
+    chat_service = ChatService()
+    result = await chat_service.process_message(
+        message=request.message,
+        language=request.language,
+        user_id=request.user_id
+    )
     return ChatResponse(
-        response=response,
-        intent=intent.name,
-        confidence=intent.confidence
+        response=result["response"],
+        intent=result["intent"],
+        confidence=result["confidence"]
     )
 
-@router.get("/regulations/{category}")
-async def get_regulations(category: str, language: str):
-    db_ops = DatabaseOperations()
-    regulations = db_ops.get_regulations(category, language)
-    return regulations
+@router.get("/health")
+async def health_check():
+    return {"status": "OK"}
