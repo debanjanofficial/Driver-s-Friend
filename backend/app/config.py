@@ -1,9 +1,13 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 class Settings(BaseSettings):
-    MONGODB_URI: str = "mongodb://localhost:27017"
-    DATABASE_NAME: str = "driving_regulations"
-    MODEL_PATH: str = "models"
+    mongodb_uri: str = "mongodb://localhost:27017"
+    database_name: str = "driving_regulations"
+    debug: bool = True
     
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = ConfigDict(
+        extra='allow',  # Allow extra fields
+        env_file='.env'
+    )
 
 settings = Settings()
