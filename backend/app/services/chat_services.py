@@ -1,7 +1,8 @@
-from ..nlp.processor import LanguageProcessor
-from ..nlp.intent_classifier import IntentClassifier
-from ..nlp.response_generator import ResponseGenerator
-from ..database.operations import DatabaseOperations
+from typing import Optional
+from app.nlp.processor import LanguageProcessor
+from app.nlp.intent_classifier import IntentClassifier
+from app.nlp.response_generator import ResponseGenerator
+from app.database.operations import DatabaseOperations
 
 class ChatService:
     def __init__(self):
@@ -10,23 +11,22 @@ class ChatService:
         self.db_ops = DatabaseOperations()
         self.response_generator = ResponseGenerator(self.db_ops)
     
-    async def process_message(self, message: str, language: str, 
-                            user_id: Optional[str] = None):
-        # Process message
+    async def process_message(self, message: str, language: str, user_id: Optional[str] = None):
         processed_text = self.nlp_processor.process_text(message, language)
-        
-        # Get intent
         intent = self.intent_classifier.predict(processed_text)
         
-        # Generate response
         response = self.response_generator.generate_response(
-            intent.name, language
+            intent_name=intent.name,
+            language=language
         )
         
-        # Log interaction
+        # Log chat if user_id is provided
         if user_id:
             self.db_ops.log_chat_interaction(
-                user_id, message, intent.name, response
+                user_id=user_id,
+                message=message,
+                intent=intent.name,
+                response=response
             )
         
         return {
