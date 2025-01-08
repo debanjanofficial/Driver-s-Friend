@@ -9,8 +9,7 @@ async def chat_endpoint(request: ChatRequest):
     chat_service = ChatService()
     result = await chat_service.process_message(
         message=request.message,
-        language=request.language,
-        user_id=request.user_id
+        language=request.language
     )
     return ChatResponse(
         response=result["response"],
