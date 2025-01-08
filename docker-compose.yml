@@ -1,0 +1,44 @@
+version: '3'
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: driving_rules_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - .env:/app/.env
+    depends_on:
+      - mongo
+    networks:
+      - driving-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: driving_rules_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - driving-net
+
+  mongo:
+    image: mongo:6.0
+    container_name: driving_rules_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - driving-net
+
+volumes:
+  mongo_data:
+
+networks:
+  driving-net:
+    driver: bridge
