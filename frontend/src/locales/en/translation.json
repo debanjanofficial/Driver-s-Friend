@@ -1,0 +1,8 @@
+{
+    "welcome": "Welcome! How can I assist you?",
+    "speed_limit": "The speed limit in urban areas is 50 km/h.",
+    "alcohol_limit": "The legal alcohol limit for drivers is 0.5‰.",
+    "fallback": "I don't have information on that right now.",
+    "seatbelt_rule": "Wearing a seatbelt is mandatory for all passengers.",
+  "parking_rule": "Parking on sidewalks is prohibited unless explicitly allowed."
+  }

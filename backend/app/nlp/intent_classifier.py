@@ -23,17 +23,20 @@ class IntentClassifier:
 
         # Naive rule-based logic:
         if any("speed" in tok for tok in tokens_lower):
+            print ("Predicted intent: speed_limit (confidence: 0.9)")
             return type("Intent", (object,), {
                 "name": "speed_limit",
                 "confidence": 0.9
             })()
         elif any("alcohol" in tok or "drink" in tok for tok in tokens_lower):
+            print("Predicted intent: alcohol_limit (confidence: 0.85)")
             return type("Intent", (object,), {
                 "name": "alcohol_limit",
                 "confidence": 0.85
             })()
 
         # Default fallback intent if no rules matched
+        print("Predicted intent: unknown (confidence: 0.5)")
         return type("Intent", (object,), {
             "name": "unknown",
             "confidence": 0.5

@@ -1,0 +1,9 @@
+{
+    "welcome": "Willkommen! Wie kann ich Ihnen helfen?",
+    "speed_limit": "Die Geschwindigkeitsbegrenzung in Städten beträgt 50 km/h.",
+    "alcohol_limit": "Die gesetzliche Alkoholgrenze für Fahrer beträgt 0,5‰.",
+    "fallback": "Dazu habe ich momentan keine Informationen.",
+    "seatbelt_rule": "Das Tragen eines Sicherheitsgurts ist für alle Insassen Pflicht.",
+  "parking_rule": "Das Parken auf Gehwegen ist verboten, es sei denn, es ist ausdrücklich erlaubt."
+
+  }
