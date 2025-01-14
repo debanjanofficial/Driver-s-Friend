@@ -5,7 +5,6 @@ import ChatInput from './ChatInput';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { chatAPI } from '../../services/api';
 import { Message } from '../../types';
-import { useTranslation } from 'react-i18next/hooks';
 
 const ChatWindow: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);

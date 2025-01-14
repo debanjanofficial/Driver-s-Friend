@@ -7,6 +7,10 @@ class LanguageProcessor:
             'en': spacy.load('en_core_web_sm'),
             'de': spacy.load('de_core_news_sm')
         }
+        
+    def extract_keywords(self, text):
+        doc = self.nlp(text)
+        return [token.text.lower() for token in doc if token.is_alpha]
     
     def process_text(self, text, language='en'):
         nlp = self.nlp_models.get(language, self.nlp_models['en'])
