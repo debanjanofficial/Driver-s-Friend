@@ -9,7 +9,7 @@ sample_regulation = [{
     "category": "speed_limit",
     "country": "germany",
     "content": "The speed limit in urban areas is 50 km/h.",
-    "language": ["en-US", "en-GB", ""],
+    "language": ["en-US", "en-GB", "en-I"],
     "keywords": ["speed", "urban", "limit"],
     "last_updated": datetime.now(),
     "source": "StVO §3",

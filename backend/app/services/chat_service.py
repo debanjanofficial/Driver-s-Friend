@@ -10,19 +10,24 @@ class ChatService:
         self.db_ops = DatabaseOperations()
         self.response_generator = ResponseGenerator(self.db_ops)
     
-    async def process_message(self, message: str, language: str, user_id: str = None):
-        processed_text = self.nlp_processor.process_text(message, language)
-        intent = self.intent_classifier.predict(processed_text)
-        
-        response = self.response_generator.generate_response(
-            intent.name,language)
-        
-        # Log chat if user_id is provided
-        if user_id:
-            self.db_ops.log_chat_interaction(user_id, message, intent.name, response)
-        
+    async def process_message(self, message: str, language: str):
+        # Extract keywords from user query
+        keywords = self.processor.extract_keywords(message)
+
+        # Search for matching regulations in the database
+        results = self.db_ops.search_regulations(keywords, language)
+
+        # If results are found, return the first match
+        if results:
+            return {
+                "response": results[0]["content"],
+                "intent": results[0]["category"],
+                "confidence": 0.9  # Mock confidence score for simplicity
+            }
+
+        # Fallback response if no matches are found
         return {
-            "response": response,
-            "intent": intent.name,
-            "confidence": intent.confidence
+            "response": f"I don't have information on '{message}' right now.",
+            "intent": "unknown",
+            "confidence": 0.5
         }

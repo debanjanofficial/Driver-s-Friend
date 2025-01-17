@@ -8,9 +8,14 @@ class DatabaseOperations:
         self.client = MongoClient(settings.mongodb_uri)
         self.db = self.client[settings.database_name]
 
-    def get_regulations(self, category: str, language: str):
-        return list(self.db.regulations.find(
-            {"category": category, "language": language}, {"_id": 0}
+    def get_regulations(self, keywords, language: str):
+        query = {
+            "$and": [
+                {"keywords": {"$in": keywords}},  # Matches any keyword
+                {"language": language}           # Matches the specified language
+            ]
+        }
+        return list(self.db.regulations.find(query, {"_id": 0}
         ))
 
     def insert_regulation(self, regulation_data: dict):
