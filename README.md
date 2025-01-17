@@ -10,6 +10,13 @@ A multilingual chatbot designed to answer questions related to driving rules, re
 ## Project Description
 Driver's Friend is designed to enhance the driving experience by integrating several useful tools and services. The project is primarily developed using Python and TypeScript.
 
+## Features
+1) Multilingual support (English and German).
+2) Real-time chat interface with Material UI.
+3) Backend processes user queries using tokenization and retrieves answers from the database.
+4) Database stores driving rules categorized by type (e.g., speed limits, alcohol limits).
+5) Responsive design using Material UI.
+
 ## Installation
 To install the necessary packages, follow the instructions below:
 
