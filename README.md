@@ -2,11 +2,11 @@
 A multilingual chatbot designed to answer questions related to driving rules, regulations, and fines in Germany. The chatbot uses a React frontend, a FastAPI backend, and MongoDB as the database to store driving-related rules.
 
 ## Table of Contents
-Project Description
-Installation
-Usage
-Contributing
-License
+1) Project Description
+2) Installation
+3) Usage
+4) Contributing
+5) License
 ## Project Description
 Driver's Friend is designed to enhance the driving experience by integrating several useful tools and services. The project is primarily developed using Python and TypeScript.
 
