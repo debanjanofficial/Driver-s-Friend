@@ -1,5 +1,5 @@
 # Driver-s-Friend
-Driver's Friend is a project aimed at providing various functionalities to assist drivers. It includes features such as chat windows for user interaction, translation services, and more.
+A multilingual chatbot designed to answer questions related to driving rules, regulations, and fines in Germany. The chatbot uses a React frontend, a FastAPI backend, and MongoDB as the database to store driving-related rules.
 
 ## Table of Contents
 Project Description
