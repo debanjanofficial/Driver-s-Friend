@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from app.api.models import ChatRequest, ChatResponse
 from app.services.chat_service import ChatService
 
@@ -16,7 +16,3 @@ async def chat_endpoint(request: ChatRequest):
         intent=result["intent"],
         confidence=result["confidence"]
     )
-
-@router.get("/health")
-async def health_check():
-    return {"status": "OK"}

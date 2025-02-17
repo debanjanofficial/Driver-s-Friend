@@ -1,33 +1,28 @@
-from app.nlp.processor import LanguageProcessor
-from app.nlp.intent_classifier import IntentClassifier
-from app.nlp.response_generator import ResponseGenerator
-from app.database.operations import DatabaseOperations
+from backend.app.database.operations import DatabaseOperations
+from backend.app.nlp.processor import LanguageProcessor
 
 class ChatService:
     def __init__(self):
-        self.nlp_processor = LanguageProcessor()
-        self.intent_classifier = IntentClassifier()
         self.db_ops = DatabaseOperations()
-        self.response_generator = ResponseGenerator(self.db_ops)
-    
+        self.processor = LanguageProcessor()
+
     async def process_message(self, message: str, language: str):
-        # Extract keywords from user query
+        # 1. Tokenize user query to extract keywords
         keywords = self.processor.extract_keywords(message)
 
-        # Search for matching regulations in the database
+        # 2. Search the database for matching regulations
         results = self.db_ops.search_regulations(keywords, language)
 
-        # If results are found, return the first match
+        # 3. Return the first found record or a fallback
         if results:
             return {
                 "response": results[0]["content"],
-                "intent": results[0]["category"],
-                "confidence": 0.9  # Mock confidence score for simplicity
+                "intent": results[0].get("category", "unknown"),
+                "confidence": 0.9
             }
-
-        # Fallback response if no matches are found
-        return {
-            "response": f"I don't have information on '{message}' right now.",
-            "intent": "unknown",
-            "confidence": 0.5
-        }
+        else:
+            return {
+                "response": f"I don't have information on '{message}' right now.",
+                "intent": "unknown",
+                "confidence": 0.5
+            }
