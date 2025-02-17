@@ -16,3 +16,7 @@ async def chat_endpoint(request: ChatRequest):
         intent=result["intent"],
         confidence=result["confidence"]
     )
+
+@router.get("/health")
+async def health_check():
+    return {"status": "OK"}
