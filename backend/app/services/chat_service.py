@@ -1,5 +1,5 @@
-from backend.app.database.operations import DatabaseOperations
-from backend.app.nlp.processor import LanguageProcessor
+from app.database.operations import DatabaseOperations
+from app.nlp.processor import LanguageProcessor
 
 class ChatService:
     def __init__(self):

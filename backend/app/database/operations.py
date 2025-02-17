@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from backend.app.config import settings  # or wherever your config is stored
+from app.config import settings  # or wherever your config is stored
 
 class DatabaseOperations:
     def __init__(self):
