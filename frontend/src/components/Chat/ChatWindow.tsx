@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Paper, Button } from '@mui/material';
+import { Box, Paper, Button, Typography} from '@mui/material';
 import MessageBubble from './MessageBubble';
 import ChatInput from './ChatInput';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -19,6 +19,8 @@ const ChatMessage = ({ intent }: { intent: string }) => {
 
 const ChatWindow: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);
+    const [isTyping, setIsTyping] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
     const { language } = useLanguage();
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
@@ -27,6 +29,32 @@ const ChatWindow: React.FC = () => {
     };
 
     useEffect(scrollToBottom, [messages]);
+
+    const simulateTyping = (text: string) => {
+        return new Promise<void>((resolve) => {
+            const words = text.split(' ');
+            let currentText = '';
+            let index = 0;
+
+            const interval = setInterval(() => {
+                if (index < words.length) {
+                    currentText += words[index] + ' ';
+                    setMessages(prev => {
+                        const lastMessage = prev[prev.length - 1];
+                        if (lastMessage && lastMessage.sender === 'bot') {
+                            lastMessage.text = currentText;
+                            return [...prev.slice(0, -1), lastMessage];
+                        }
+                        return prev;
+                    });
+                    index++;
+                } else {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 100); // Adjust typing speed here
+        });
+    };
 
     const handleSendMessage = async (text: string) => {
         // Add user message
@@ -38,18 +66,28 @@ const ChatWindow: React.FC = () => {
         };
         setMessages(prev => [...prev, userMessage]);
 
+        setIsGenerating(true);
+
         try {
             // Get bot response
             const response = await chatAPI.sendMessage(text, language);
             const botMessage: Message = {
                 id: (Date.now() + 1).toString(),
-                text: response.response,
+                text: '',
                 sender: 'bot',
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, botMessage]);
+            // Wait for 2-3 seconds before starting to type
+            await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1000));
+
+            setIsGenerating(false);
+            setIsTyping(true);
+            await simulateTyping(response.response);
         } catch (error) {
             console.error('Error getting response:', error);
+        } finally {
+            setIsTyping(false);
         }
     };
     const handleClearChat = () => {
@@ -62,6 +100,16 @@ const ChatWindow: React.FC = () => {
                 {messages.map(message => (
                     <MessageBubble key={message.id} message={message} />
                 ))}
+                {isGenerating && (
+                    <Typography variant="body2" sx={{ color: 'gray', fontStyle: 'italic' }}>
+                        Driver's Friend is generating answer...
+                    </Typography>
+                )}
+                {isTyping && (
+                    <Typography variant="body2" sx={{ color: 'gray', fontStyle: 'italic' }}>
+                        Driver's Friend is typing...
+                    </Typography>
+                )}
                 <div ref={messagesEndRef} />
             </Box>
             <Box sx ={{ display: 'flex', justifyContent: 'space-between', pb: 2 }}>
