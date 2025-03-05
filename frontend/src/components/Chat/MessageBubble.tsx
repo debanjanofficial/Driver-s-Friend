@@ -1,6 +1,8 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Avatar } from '@mui/material';
 import { Message } from '../../types';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import PersonIcon from '@mui/icons-material/Person';
 
 interface Props {
     message: Message;
@@ -13,21 +15,31 @@ const MessageBubble: React.FC<Props> = ({ message }) => {
         <Box
             sx={{
                 display: 'flex',
-                justifyContent: isBot ? 'flex-start' : 'flex-end',
-                mb: 2
+                width: '100%',
+                p: 2,
+                backgroundColor: isBot ? 'background.paper' : 'background.default',
+                borderTop: 1,
+                borderColor: 'divider',
+                alignItems: 'flex-start',
+                gap: 2
             }}
         >
-            <Box
-                sx={{
-                    maxWidth: '70%',
-                    backgroundColor: isBot ? 'primary.light' : 'secondary.light',
-                    borderRadius: 2,
-                    p: 2
-                }}
-            >
-                <Typography variant="body1">{message.text}</Typography>
-                <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                    {message.timestamp.toLocaleTimeString()}
+            <Avatar sx={{ 
+                bgcolor: isBot ? 'primary.main' : 'secondary.main',
+                width: 36,
+                height: 36
+            }}>
+                {isBot ? <SmartToyIcon /> : <PersonIcon />}
+            </Avatar>
+            <Box sx={{ flexGrow: 1 }}>
+                <Typography 
+                    variant="body1" 
+                    sx={{ 
+                        whiteSpace: 'pre-wrap',
+                        fontFamily: '"Söhne", ui-sans-serif, system-ui, -apple-system'
+                    }}
+                >
+                    {message.text}
                 </Typography>
             </Box>
         </Box>
