@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, TextField, IconButton } from '@mui/material';
+import { Box, TextField, IconButton, Paper } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 
 interface Props {
@@ -18,28 +18,48 @@ const ChatInput: React.FC<Props> = ({ onSendMessage }) => {
     };
 
     return (
-        <Box
+        <Paper 
             component="form"
             onSubmit={handleSubmit}
+            elevation={3}
             sx={{
-                p: 2,
-                borderTop: 1,
-                borderColor: 'divider',
-                display: 'flex'
+                position: 'fixed',
+                bottom: 30,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '90%',
+                maxWidth: '800px',
+                display: 'flex',
+                p: 1,
+                borderRadius: 2
             }}
         >
             <TextField
                 fullWidth
+                multiline
+                maxRows={4}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type your message..."
+                placeholder="Message Driver's Friend..."
                 variant="outlined"
-                size="small"
+                sx={{
+                    '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        fontSize: '0.9rem',
+                    }
+                }}
             />
-            <IconButton type="submit" color="primary" sx={{ ml: 1 }}>
+            <IconButton 
+                type="submit" 
+                color="primary" 
+                sx={{ 
+                    ml: 1,
+                    alignSelf: 'flex-end'
+                }}
+            >
                 <SendIcon />
             </IconButton>
-        </Box>
+        </Paper>
     );
 };
 
