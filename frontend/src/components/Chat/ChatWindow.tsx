@@ -6,7 +6,11 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { chatAPI } from '../../services/api';
 import { Message } from '../../types';
 
-const ChatWindow: React.FC = () => {
+interface Props {
+    exampleQuery: string | null;
+}
+
+const ChatWindow: React.FC<Props> = ({exampleQuery}) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -18,6 +22,13 @@ const ChatWindow: React.FC = () => {
     };
 
     useEffect(scrollToBottom, [messages, isTyping, isGenerating]);
+
+    // Add a effect to handle example queries
+    useEffect(() => {
+        if (exampleQuery) {
+            handleSendMessage(exampleQuery);
+        }
+    }, [exampleQuery]);
 
     // Add a welcome message on initial load
     useEffect(() => {
