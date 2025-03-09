@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, KeyboardEvent} from 'react';
 import { Box, TextField, IconButton, Paper } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 
@@ -16,6 +16,16 @@ const ChatInput: React.FC<Props> = ({ onSendMessage }) => {
             setMessage('');
         }
     };
+    const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+        // Send on Enter without Shift key (Shift+Enter creates a new line)
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (message.trim()) {
+            onSendMessage(message);
+            setMessage('');
+          }
+        }
+      };
 
     return (
         <Paper 
@@ -40,6 +50,7 @@ const ChatInput: React.FC<Props> = ({ onSendMessage }) => {
                 maxRows={4}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="Message Driver's Friend..."
                 variant="outlined"
                 sx={{
