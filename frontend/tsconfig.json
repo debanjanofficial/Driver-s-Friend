@@ -1,12 +1,20 @@
 {
   "compilerOptions": {
-    "jsx": "react-jsx",       // Enables JSX support for React
-    "target": "es6",          // Target modern JavaScript (ES6+)
-    "module": "esnext",       // Use ESNext modules
-    "strict": true,           // Enable strict type checking
-    "moduleResolution": "node",
-    "esModuleInterop": true,
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
-  }
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  "include": ["src"]
 }
