@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from typing import List, Optional
 from app.config import settings  # or wherever your config is stored
 
 class DatabaseOperations:
@@ -20,3 +21,40 @@ class DatabaseOperations:
             ]
         }
         return list(self.db.regulations.find(query, {"_id": 0}))
+    def get_regulations(self, category: str, language: str = "en-US") -> List[dict]:
+        """
+        Get regulations by category and language
+        """
+        query = {
+            "$and": [
+                {"category": category},
+                {"language": {"$regex": language}}
+            ]
+        }
+        return list(self.db.regulations.find(query, {"_id": 0}))
+    def insert_regulation(self, regulations: List[dict]) -> None:
+        """
+        Insert new regulations into the database
+        """
+        if isinstance(regulations, list):
+            self.db.regulations.insert_many(regulations)
+        else:
+            self.db.regulations.insert_one(regulations)
+            
+    def insert_regulation(self, regulations: List[dict]) -> None:
+        """
+        Insert new regulations into the database
+        """
+        if isinstance(regulations, list):
+            self.db.regulations.insert_many(regulations)
+        else:
+            self.db.regulations.insert_one(regulations)
+            
+    def store_chat_message(self, message_data):
+        return self.db.chat_history.insert_one(message_data)
+    
+    def get_chat_history(self, user_id, limit=10):
+        return list(self.db.chat_history.find(
+        {"user_id": user_id}, 
+        {"_id": 0}
+        ).sort("timestamp", -1).limit(limit))
