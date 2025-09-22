@@ -35,13 +35,16 @@ class RouteToGermanyScraper:
         }
     
     def get_page_content(self, url: str) -> Optional[str]:
-        """Fetch content from a specific URL"""
+        """Fetch content from a specific URL with timeout protection"""
         try:
-            response = self.session.get(url, timeout=10)
+            response = self.session.get(url, timeout=5)  # Reduced timeout to 5 seconds
             response.raise_for_status()
             return response.text
         except requests.RequestException as e:
             logger.error(f"Error fetching {url}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error fetching {url}: {e}")
             return None
     
     def extract_relevant_sections(self, html_content: str, topic_keywords: List[str]) -> List[str]:
@@ -243,10 +246,10 @@ class WebSearchService:
         self.route_scraper = RouteToGermanyScraper()
     
     def search_route_to_germany(self, query: str, language: str = "en") -> Optional[Dict]:
-        """Search Route to Germany website for driving information"""
+        """Search Route to Germany website for driving information with error protection"""
         try:
             result = self.route_scraper.search_topic(query, language)
-            if result:
+            if result and result.get("summary") and len(result["summary"].strip()) > 50:
                 return {
                     "response": result["summary"],
                     "source": "routetogermany.com",
