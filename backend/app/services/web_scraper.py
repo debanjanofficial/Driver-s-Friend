@@ -31,7 +31,8 @@ class RouteToGermanyScraper:
             "insurance": "/drivingingermany/insurance",
             "fines": "/drivingingermany/fines-on-violations",
             "tires": "/drivingingermany/tires-regulations",
-            "environmental": "/drivingingermany/environmental-zone-germany"
+            "environmental": "/drivingingermany/environmental-zone-germany",
+            "tuning": "/drivingingermany/performance-tuning"
         }
     
     def get_page_content(self, url: str) -> Optional[str]:
@@ -51,80 +52,79 @@ class RouteToGermanyScraper:
         """Extract relevant sections based on topic keywords"""
         soup = BeautifulSoup(html_content, 'html.parser')
         
-        # Remove script, style, navigation, header, footer elements
-        for element in soup(["script", "style", "nav", "header", "footer", "aside"]):
+        # Remove script, style, navigation elements
+        for element in soup(["script", "style", "nav", "header", "footer"]):
             element.decompose()
-        
-        # Remove common navigation classes and IDs
-        nav_selectors = [
-            ".nav", ".navigation", ".menu", "#nav", "#navigation", "#menu",
-            ".sidebar", ".header", ".footer", "[class*='nav']", "[id*='nav']"
-        ]
-        for selector in nav_selectors:
-            for element in soup.select(selector):
-                element.decompose()
         
         relevant_sections = []
         
-        # Look for main content areas first
-        main_content = soup.find(['main', 'article']) or soup.find('div', class_=re.compile(r'content|main|article'))
-        if main_content:
-            soup = main_content
+        # Get all paragraphs and meaningful text blocks
+        content_elements = soup.find_all(['p', 'div', 'li', 'h1', 'h2', 'h3'])
         
-        # Find sections containing the keywords in meaningful content
-        for element in soup.find_all(['h1', 'h2', 'h3', 'h4', 'p', 'li', 'div'], string=True):
-            text = element.get_text().lower()
+        for element in content_elements:
+            text = element.get_text().strip()
             
-            # Skip very short text or navigation-like text
-            if len(text.strip()) < 20:
+            # Skip very short content or navigation-like content
+            if len(text) < 30:
                 continue
                 
-            # Skip if it looks like navigation (contains lots of links)
-            links_count = len(element.find_all('a'))
-            text_length = len(text)
-            if links_count > 3 and text_length < 200:  # Likely navigation
+            # Skip if it's mostly navigation (lots of short words/links)
+            words = text.split()
+            if len(words) < 5:
                 continue
+                
+            # Check for keyword relevance
+            text_lower = text.lower()
+            keyword_matches = sum(1 for keyword in topic_keywords if keyword.lower() in text_lower)
             
-            # Check if any keyword matches
-            if any(keyword.lower() in text for keyword in topic_keywords):
-                # Get the parent section for context
-                section_text = self._extract_section_with_context(element)
-                if section_text and len(section_text.strip()) > 100:  # Increase minimum content length
-                    # Clean up the text
-                    cleaned_text = self._clean_text(section_text)
-                    if cleaned_text:
-                        relevant_sections.append(cleaned_text)
+            # If keywords match or it's a substantial paragraph, include it
+            if keyword_matches > 0 or len(text) > 100:
+                # Clean up the text
+                cleaned_text = self._clean_text(text)
+                if cleaned_text and len(cleaned_text) > 50:
+                    relevant_sections.append(cleaned_text)
         
-        # If no specific matches, try to get the first few meaningful paragraphs
-        if not relevant_sections:
+        # If we found content, return it; otherwise get the main content
+        if relevant_sections:
+            return relevant_sections[:5]  # Return more sections
+        else:
+            # Fallback: get main paragraphs from the page
             paragraphs = soup.find_all('p')
-            for p in paragraphs[:5]:  # First 5 paragraphs
+            for p in paragraphs:
                 text = p.get_text().strip()
-                if len(text) > 50 and not self._is_navigation_text(text):
-                    cleaned_text = self._clean_text(text)
-                    if cleaned_text:
-                        relevant_sections.append(cleaned_text)
-        
-        return relevant_sections[:3]  # Limit to top 3 most relevant sections
+                if len(text) > 50:
+                    cleaned = self._clean_text(text)
+                    if cleaned:
+                        relevant_sections.append(cleaned)
+                        if len(relevant_sections) >= 3:
+                            break
+            return relevant_sections
     
     def _clean_text(self, text: str) -> str:
         """Clean and format extracted text"""
         # Remove excessive whitespace
-        text = re.sub(r'\s+', ' ', text)
-        # Remove common navigation phrases
-        nav_phrases = [
-            '× Home', 'Driver\'s Licence', 'Traffic Laws and Regulations',
-            'Driving on Autobahn', 'Important Road Signs', 'Learn German Language'
+        text = re.sub(r'\s+', ' ', text.strip())
+        
+        # Remove common navigation elements that appear in content
+        nav_patterns = [
+            r'×\s*Home.*?German Language Level A2',
+            r'Home\s+Driver\'s.*?German Language Level A2',
+            r'☰\s*Driving in Germany',
+            r'Learn German Language.*?lets-learn-german\.com'
         ]
-        for phrase in nav_phrases:
-            text = text.replace(phrase, '')
         
-        # Remove sequences of navigation links
-        text = re.sub(r'(Home|Driver\'s|License|Categories|Buying|Importing|Cars){3,}', '', text)
+        for pattern in nav_patterns:
+            text = re.sub(pattern, '', text, flags=re.DOTALL | re.IGNORECASE)
         
-        # Clean up and return
-        text = text.strip()
-        return text if len(text) > 30 else None
+        # Remove standalone navigation words
+        nav_words = ['Home', 'Driver\'s Licence', 'Traffic Laws and Regulations', '×']
+        for word in nav_words:
+            text = text.replace(word, ' ')
+        
+        # Clean up extra spaces
+        text = re.sub(r'\s+', ' ', text.strip())
+        
+        return text if len(text) > 20 else None
     
     def _is_navigation_text(self, text: str) -> bool:
         """Check if text looks like navigation"""
@@ -164,7 +164,7 @@ class RouteToGermanyScraper:
         # Map query keywords to topic categories
         topic_mapping = {
             "speed": "speed_limit",
-            "limit": "speed_limit",
+            "limit": "speed_limit", 
             "autobahn": "autobahn",
             "highway": "autobahn",
             "park": "parking",
@@ -186,7 +186,10 @@ class RouteToGermanyScraper:
             "penalty": "fines",
             "tire": "tires",
             "winter": "tires",
-            "environmental": "environmental"
+            "environmental": "environmental",
+            "tuning": "tuning",
+            "performance": "tuning", 
+            "modification": "tuning"
         }
         
         # Find the best matching topic

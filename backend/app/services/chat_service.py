@@ -70,18 +70,18 @@ class ChatService:
                 "suggestions": self._generate_related_questions(intent, language)
             }
         else:
-            # Use offline knowledge base when database is unavailable
-            offline_response = self._get_offline_response(message, language)
-            if offline_response:
-                result = offline_response
-                response = result["response"]  # Extract response for storage
+            # Try web search first for comprehensive information
+            web_response = self.web_search_service.search_route_to_germany(message, language)
+            if web_response:
+                result = web_response
+                response = f"According to routetogermany.com:\n\n{result['response']}\n\nSource: {result['url']}"
+                result["response"] = response  # Update with formatted response
             else:
-                # Try web search as a fallback
-                web_response = self.web_search_service.search_route_to_germany(message, language)
-                if web_response:
-                    result = web_response
-                    response = f"According to routetogermany.com:\n\n{result['response']}\n\nSource: {result['url']}"
-                    result["response"] = response  # Update with formatted response
+                # Use offline knowledge base as fallback
+                offline_response = self._get_offline_response(message, language)
+                if offline_response:
+                    result = offline_response
+                    response = result["response"]  # Extract response for storage
                 else:
                     response = f"I don't have information on '{message}' right now. Try asking about specific driving rules or regulations."
                     result = {
