@@ -4,11 +4,14 @@ from typing import List, Optional
 class ChatRequest(BaseModel):
     message: str
     language: str
+    user_id: Optional[str] = None
 
 class ChatResponse(BaseModel):
     response: str
     intent: str
     confidence: float
+    search_results: Optional[List[dict]] = None
+    suggestions: Optional[List[str]] = None
     
 class SearchRequest(BaseModel):
     query: str

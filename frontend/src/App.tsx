@@ -12,7 +12,7 @@ import { Drawer, List, ListItem, ListItemButton, ListItemText, Typography, Divid
 
 // Create AppContent component to use the auth hook inside the provider
 const AppContent = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, isDemo } = useAuth();
   const [mode, setMode] = useState<'light' | 'dark'>('dark');
   const drawerWidth = 260;
   const exampleQueries = [
@@ -112,10 +112,10 @@ const AppContent = () => {
               />
               <Box>
                 <Typography variant="body1" noWrap>
-                  {currentUser?.displayName || 'User'}
+                  {currentUser?.displayName || 'Demo User'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" noWrap>
-                  {currentUser?.email || ''}
+                  {isDemo ? 'Demo Mode' : currentUser?.email || ''}
                 </Typography>
               </Box>
             </Box>

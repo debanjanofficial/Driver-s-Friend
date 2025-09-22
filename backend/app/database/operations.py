@@ -58,3 +58,15 @@ class DatabaseOperations:
         {"user_id": user_id}, 
         {"_id": 0}
         ).sort("timestamp", -1).limit(limit))
+    
+    def get_categories(self, language: str = "en-US") -> List[str]:
+        """
+        Get all available categories for a specific language
+        """
+        pipeline = [
+            {"$match": {"language": {"$regex": language}}},
+            {"$group": {"_id": "$category"}},
+            {"$sort": {"_id": 1}}
+        ]
+        result = list(self.db.regulations.aggregate(pipeline))
+        return [item["_id"] for item in result]

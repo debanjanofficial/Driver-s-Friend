@@ -13,6 +13,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  isDemo: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -28,16 +29,48 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+    // For development, always use demo mode and skip Firebase authentication
+    console.log("Running in demo mode - bypassing Firebase authentication");
+    setIsDemo(true);
+    setCurrentUser({
+      uid: 'demo-user',
+      email: 'demo@driversfriend.com',
+      displayName: 'Demo User',
+      photoURL: null
+    } as User);
+    setLoading(false);
+    
+    // Uncomment below to enable real Firebase authentication
+    /*
+    try {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setCurrentUser(user);
+        setLoading(false);
+      });
+      return unsubscribe;
+    } catch (error) {
+      console.warn("Firebase auth not available, running in demo mode");
+      setIsDemo(true);
+      setCurrentUser({
+        uid: 'demo-user',
+        email: 'demo@example.com',
+        displayName: 'Demo User',
+        photoURL: null
+      } as User);
       setLoading(false);
-    });
-    return unsubscribe;
+    }
+    */
   }, []);
 
   const signInWithGoogle = async () => {
+    if (isDemo) {
+      console.log("Demo mode: Google sign-in simulated");
+      return;
+    }
+    
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -47,6 +80,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    if (isDemo) {
+      console.log("Demo mode: Logout simulated");
+      return;
+    }
+    
     try {
       await signOut(auth);
     } catch (error) {
@@ -58,7 +96,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     currentUser,
     loading,
     signInWithGoogle,
-    logout
+    logout,
+    isDemo
   };
 
   return (

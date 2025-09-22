@@ -6,6 +6,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Driving Regulations Chatbot")
 
+# Add CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Replace "*" with specific origins like ["http://localhost:3000"] for security
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
+
 # Include all your API endpoints from routes.py
 app.include_router(router, prefix="/api")
 
@@ -16,16 +25,3 @@ if __name__ == "__main__":
         port=8000,
         reload=settings.debug
     )
-    
-# Add CORS Middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Replace "*" with specific origins like ["http://localhost:3000"] for security
-    allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, OPTIONS, etc.)
-    allow_headers=["*"],  # Allow all headers
-)
-
-# Include your routes here
-from app.api.routes import router
-app.include_router(router, prefix="/api")

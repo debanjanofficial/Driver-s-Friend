@@ -4,7 +4,34 @@ import GoogleIcon from '@mui/icons-material/Google';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Login: React.FC = () => {
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, isDemo } = useAuth();
+
+  if (isDemo) {
+    return (
+      <Paper
+        elevation={3}
+        sx={{
+          p: 4,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          maxWidth: '400px',
+          margin: '0 auto',
+          mt: 4
+        }}
+      >
+        <Typography variant="h5" component="h1" gutterBottom>
+          🚗 Driver's Friend
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 3, textAlign: 'center' }}>
+          Demo Mode - Loading chat interface...
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          No authentication required in development mode
+        </Typography>
+      </Paper>
+    );
+  }
 
   return (
     <Paper

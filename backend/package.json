@@ -1,6 +1,9 @@
 {
-  "dependencies": {
-    "@types/react": "^19.0.3",
-    "react": "^19.0.0"
+  "name": "drivers-friend-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Driver's Friend chatbot",
+  "main": "app/main.py",
+  "scripts": {
+    "start": "python -m app.main"
   }
 }
