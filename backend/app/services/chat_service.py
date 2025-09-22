@@ -3,6 +3,7 @@ from app.nlp.processor import LanguageProcessor
 from app.services.search_service import SearchService
 from app.services.web_scraper import WebSearchService
 from typing import List, Optional, Dict, Any
+from datetime import datetime
 
 class ChatService:
     def __init__(self):
@@ -10,11 +11,19 @@ class ChatService:
         self.processor = LanguageProcessor()
         self.search_service = SearchService()
         self.web_search_service = WebSearchService()
+        # Conversation memory storage - in production, this should be persisted in a database
+        self.conversation_memory: Dict[str, List[Dict[str, Any]]] = {}
 
     async def process_message(self, message: str, language: str, user_id: Optional[str] = None):
         
+        # Add conversation memory
         if user_id:
             await self._store_message(user_id, message, "user")
+            # Get conversation context for contextual responses
+            conversation_context = self._get_conversation_context(user_id)
+        else:
+            conversation_context = []
+            
         # 1. First attempt to classify the intent
         processed_text = self.processor.process_text(message, language.split('-')[0])
         
@@ -70,28 +79,56 @@ class ChatService:
                 "suggestions": self._generate_related_questions(intent, language)
             }
         else:
-            # Try web search first for comprehensive information
-            web_response = self.web_search_service.search_route_to_germany(message, language)
-            if web_response:
-                result = web_response
-                response = f"According to routetogermany.com:\n\n{result['response']}\n\nSource: {result['url']}"
-                result["response"] = response  # Update with formatted response
-            else:
-                # Use offline knowledge base as fallback
+            # For German language, try offline knowledge base first to provide native German responses
+            if language == "de":
                 offline_response = self._get_offline_response(message, language)
                 if offline_response:
                     result = offline_response
                     response = result["response"]  # Extract response for storage
                 else:
-                    response = f"I don't have information on '{message}' right now. Try asking about specific driving rules or regulations."
-                    result = {
-                        "response": response,
-                        "intent": "unknown",
-                        "confidence": 0.5
-                    }
+                    # Fall back to web search for German if no offline match
+                    web_response = self.web_search_service.search_route_to_germany(message, language)
+                    if web_response:
+                        result = web_response
+                        response = f"Laut {result['source']}:\n\n{result['response']}\n\nQuelle: {result['url']}"
+                        result["response"] = response  # Update with formatted response
+                    else:
+                        response = f"Ich habe derzeit keine Informationen zu '{message}'. Versuchen Sie, nach spezifischen Verkehrsregeln zu fragen."
+                        result = {
+                            "response": response,
+                            "intent": "unknown",
+                            "confidence": 0.5
+                        }
+            else:
+                # For English, prioritize web search for comprehensive information
+                web_response = self.web_search_service.search_route_to_germany(message, language)
+                if web_response:
+                    result = web_response
+                    response = f"According to {result['source']}:\n\n{result['response']}\n\nSource: {result['url']}"
+                    result["response"] = response  # Update with formatted response
+                else:
+                    # Use offline knowledge base as fallback for English
+                    offline_response = self._get_offline_response(message, language)
+                    if offline_response:
+                        result = offline_response
+                        response = result["response"]  # Extract response for storage
+                    else:
+                        response = f"I don't have information on '{message}' right now. Try asking about specific driving rules or regulations."
+                        result = {
+                            "response": response,
+                            "intent": "unknown",
+                            "confidence": 0.5
+                        }
             
         if user_id:
-            await self._store_message(user_id, response, "bot")
+            # Add contextual elements to the response
+            if "response" in result:
+                result["response"] = self._add_contextual_elements(
+                    result["response"], 
+                    conversation_context, 
+                    language
+                )
+            await self._store_message(user_id, result.get("response", ""), "assistant")
             
         return result
     
@@ -168,8 +205,8 @@ class ChatService:
         
         for i, result in enumerate(search_results["results"], 1):
             response += f"{i}. {result['content']}\n"
-            if result.get('source'):
-                response += f"   Source: {result['source']}\n"
+            # Always show "Our Database" as source for database results
+            response += f"   Source: Our Database\n"
             response += "\n"
             
         return response.strip()
@@ -289,8 +326,11 @@ class ChatService:
                     "intent": "greeting"
                 },
                 "farewell": {
-                    "keywords": ["bye", "goodbye", "see you", "thanks", "thank you", "thx", "that's all", "nothing else"],
-                    "response": "You're welcome! Drive safely and feel free to ask me anything about driving regulations anytime. Have a great day! 🚗",
+                    "keywords": ["bye", "goodbye", "see you", "thanks", "thank you", "thx", "that's all", "nothing else", 
+                               "thanks for your help", "thank you for your help", "appreciate it", "thank you so much", 
+                               "thanks a lot", "many thanks", "i appreciate it", "appreciate your help", "helpful", 
+                               "you helped me", "this helped", "very helpful"],
+                    "response": "You're welcome! Drive safely and feel free to ask me anytime about traffic rules. Have a great day! 🚗",
                     "intent": "farewell"
                 },
                 "help": {
@@ -346,7 +386,10 @@ class ChatService:
                     "intent": "greeting"
                 },
                 "farewell": {
-                    "keywords": ["tschüss", "auf wiedersehen", "danke", "vielen dank", "das wars"],
+                    "keywords": ["tschüss", "auf wiedersehen", "danke", "vielen dank", "das wars", 
+                               "danke für die hilfe", "vielen dank für die hilfe", "ich schätze es", "danke vielmals", 
+                               "herzlichen dank", "besten dank", "danke schön", "dankeschön", "das hat geholfen", 
+                               "sehr hilfreich", "du hast mir geholfen", "das war hilfreich"],
                     "response": "Gerne geschehen! Fahren Sie sicher und fragen Sie mich jederzeit bei Verkehrsregeln. Schönen Tag noch! 🚗",
                     "intent": "farewell"
                 }
@@ -398,13 +441,52 @@ class ChatService:
     
     async def _store_message(self, user_id: str, content: str, sender: str, **kwargs):
         """Store a message in the user's chat history"""
-        # In a real implementation, this would store the message in a database
-        # Example implementation:
-        # self.db_ops.insert_chat_message({
-        #     "user_id": user_id,
-        #     "content": content,
-        #     "sender": sender,
-        #     "timestamp": datetime.now(),
-        #     **kwargs
-        # })
-        pass
+        # For now, store in memory. In production, this should use a database
+        if user_id not in self.conversation_memory:
+            self.conversation_memory[user_id] = []
+        
+        message_data = {
+            "content": content,
+            "sender": sender,
+            "timestamp": datetime.now().isoformat(),
+            **kwargs
+        }
+        
+        # Keep only last 20 messages to prevent memory overflow
+        self.conversation_memory[user_id].append(message_data)
+        if len(self.conversation_memory[user_id]) > 20:
+            self.conversation_memory[user_id] = self.conversation_memory[user_id][-20:]
+    
+    def _get_conversation_context(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get recent conversation history for context"""
+        return self.conversation_memory.get(user_id, [])
+    
+    def _add_contextual_elements(self, response: str, context: List[Dict[str, Any]], language: str) -> str:
+        """Add contextual elements to response based on conversation history"""
+        if not context:
+            return response
+        
+        # Get recent topics from conversation
+        recent_topics = []
+        for msg in context[-5:]:  # Look at last 5 messages
+            if msg["sender"] == "user":
+                # Extract topics from user messages
+                user_message = msg["content"].lower()
+                if any(keyword in user_message for keyword in ["speed", "limit", "schnell"]):
+                    recent_topics.append("speed limits")
+                elif any(keyword in user_message for keyword in ["parking", "park", "parken"]):
+                    recent_topics.append("parking")
+                elif any(keyword in user_message for keyword in ["alcohol", "drink", "alkohol"]):
+                    recent_topics.append("alcohol limits")
+                elif any(keyword in user_message for keyword in ["seatbelt", "belt", "gurt"]):
+                    recent_topics.append("seatbelt safety")
+        
+        # Add contextual reference if farewell and recent topics exist
+        if recent_topics and any(keyword in response.lower() for keyword in ["welcome", "gerne"]):
+            if language.startswith("de"):
+                context_note = f" Ich hoffe, die Informationen zu {', '.join(recent_topics)} waren hilfreich."
+            else:
+                context_note = f" I hope the information about {', '.join(recent_topics)} was helpful."
+            response = response.replace("🚗", context_note + " 🚗")
+        
+        return response

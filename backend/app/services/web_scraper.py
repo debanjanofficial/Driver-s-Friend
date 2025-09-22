@@ -27,6 +27,7 @@ class RouteToGermanyScraper:
             "alcohol_limit": "/drivingingermany/fines-on-violations",
             "license": "/drivingingermany/driving-license",
             "safety": "/drivingingermany/city-driving",
+            "seatbelt": "/drivingingermany/city-driving",
             "accident": "/drivingingermany/accident",
             "insurance": "/drivingingermany/insurance",
             "fines": "/drivingingermany/fines-on-violations",
@@ -179,7 +180,8 @@ class RouteToGermanyScraper:
             "license": "license",
             "licence": "license",
             "safety": "safety",
-            "seatbelt": "safety",
+            "seatbelt": "seatbelt",
+            "seat belt": "seatbelt",
             "accident": "accident",
             "insurance": "insurance",
             "fine": "fines",
@@ -238,18 +240,215 @@ class RouteToGermanyScraper:
         combined_text = re.sub(r'\s+', ' ', combined_text)  # Remove extra whitespace
         combined_text = re.sub(r'\n+', '\n', combined_text)  # Remove extra newlines
         
+        # Limit length for chat response - increased for more comprehensive answers
+        if len(combined_text) > 2000:
+            combined_text = combined_text[:2000] + "..."
+        
+        return combined_text.strip()
+
+class GettingAroundGermanyScraper:
+    def __init__(self):
+        self.base_url = "https://www.gettingaroundgermany.info"
+        self.main_page_url = f"{self.base_url}/regeln.shtml"
+        
+        # Topic mapping for keywords to sections
+        self.topic_mapping = {
+            "license": "licensing",
+            "licence": "licensing", 
+            "driving license": "licensing",
+            "speed": "speed limits",
+            "autobahn": "autobahn traffic regulations",
+            "parking": "parking regulations",
+            "right": "right-of-way",
+            "priority": "right-of-way",
+            "alcohol": "drinking and driving",
+            "drink": "drinking and driving",
+            "accident": "accidents",
+            "insurance": "general laws and enforcement",
+            "seatbelt": "general laws and enforcement",
+            "safety": "general laws and enforcement",
+            "enforcement": "general laws and enforcement",
+            "fine": "general laws and enforcement",
+            "penalty": "general laws and enforcement",
+            "bicycle": "bicycle lanes, streets, and zones",
+            "bike": "bicycle lanes, streets, and zones",
+            "urban": "urban traffic regulations",
+            "city": "urban traffic regulations",
+            "traffic": "traffic calming zones",
+            "calm": "traffic calming zones",
+            "pass": "passing/overtaking",
+            "overtake": "passing/overtaking",
+            "phone": "additional prohibitions",
+            "mobile": "additional prohibitions"
+        }
+    
+    def get_page_content(self, url: str) -> Optional[str]:
+        """Fetch content from a specific URL with timeout protection"""
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            return response.text
+        except Exception as e:
+            logger.error(f"Error fetching {url}: {e}")
+            return None
+    
+    def extract_section_content(self, html_content: str, section_title: str) -> Optional[str]:
+        """Extract content for a specific section from the main page"""
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            # Find the section heading
+            section_heading = None
+            for heading in soup.find_all(['h2', 'h3']):
+                if section_title.lower() in heading.get_text().lower():
+                    section_heading = heading
+                    break
+            
+            if not section_heading:
+                return None
+                
+            # Extract content until next section or end
+            content_parts = []
+            current = section_heading.find_next_sibling()
+            
+            while current and current.name not in ['h2', 'h3']:
+                if current.name in ['p', 'ul', 'ol', 'div']:
+                    text = current.get_text().strip()
+                    if text and len(text) > 20:  # Filter out very short content
+                        content_parts.append(text)
+                current = current.find_next_sibling()
+                
+                # Limit to prevent too much content
+                if len(content_parts) >= 8:
+                    break
+            
+            if content_parts:
+                return '\n\n'.join(content_parts)
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error extracting section content: {e}")
+            return None
+    
+    def search_topic(self, query: str, language: str = "en") -> Optional[Dict]:
+        """Search for information on a specific topic"""
+        query_lower = query.lower()
+        
+        # Find best matching section
+        matched_section = None
+        for keyword, section in self.topic_mapping.items():
+            if keyword in query_lower:
+                matched_section = section
+                break
+        
+        if not matched_section:
+            matched_section = "general laws and enforcement"  # Default fallback
+        
+        # Fetch the main page
+        html_content = self.get_page_content(self.main_page_url)
+        if not html_content:
+            return None
+        
+        # Extract section content
+        section_content = self.extract_section_content(html_content, matched_section)
+        if not section_content:
+            return None
+        
+        # Create summary
+        summary = self._create_summary([section_content])
+        
+        return {
+            "summary": summary,
+            "url": self.main_page_url,
+            "topic": matched_section,
+            "source": "gettingaroundgermany.info"
+        }
+    
+    def _create_summary(self, sections: List[str]) -> str:
+        """Create a summary from extracted sections"""
+        if not sections:
+            return "No relevant information found."
+        
+        # Combine sections and clean up
+        combined_text = '\n\n'.join(sections)
+        
+        # Basic cleanup
+        combined_text = re.sub(r'\s+', ' ', combined_text)  # Remove extra whitespace
+        combined_text = re.sub(r'\n+', '\n', combined_text)  # Remove extra newlines
+        
         # Limit length for chat response
-        if len(combined_text) > 800:
-            combined_text = combined_text[:800] + "..."
+        if len(combined_text) > 2000:
+            combined_text = combined_text[:2000] + "..."
         
         return combined_text.strip()
 
 class WebSearchService:
     def __init__(self):
         self.route_scraper = RouteToGermanyScraper()
+        self.getting_around_scraper = GettingAroundGermanyScraper()
     
     def search_route_to_germany(self, query: str, language: str = "en") -> Optional[Dict]:
-        """Search Route to Germany website for driving information with error protection"""
+        """Search both websites for driving information with intelligent fallback"""
+        # Try both sources and compare relevance
+        primary_result = self._search_primary_source(query, language)
+        secondary_result = self._search_secondary_source(query, language)
+        
+        # If only one source has results, use it
+        if primary_result and not secondary_result:
+            result = primary_result
+        elif secondary_result and not primary_result:
+            result = secondary_result
+        elif not primary_result and not secondary_result:
+            return None
+        else:
+            # If both have results, check relevance and prefer the more relevant one
+            primary_relevance = self._calculate_relevance(query, primary_result.get("response", ""))
+            secondary_relevance = self._calculate_relevance(query, secondary_result.get("response", ""))
+            
+            # If secondary is significantly more relevant, use it
+            if secondary_relevance > primary_relevance + 0.2:  # 20% threshold
+                result = secondary_result
+            else:
+                result = primary_result  # Default to primary if relevance is similar
+        
+        # Handle German language requests
+        if language == "de" and result:
+            result = self._handle_german_response(result)
+            
+        return result
+    
+    def _handle_german_response(self, result: Dict) -> Dict:
+        """Handle German language response - add note about English source"""
+        original_response = result.get("response", "")
+        german_note = "\n\n[Hinweis: Diese Informationen stammen aus englischsprachigen Quellen, da deutsche Versionen nicht verfügbar sind.]"
+        
+        # Add German note to the response
+        result["response"] = original_response + german_note
+        return result
+    
+    def _calculate_relevance(self, query: str, content: str) -> float:
+        """Calculate how relevant the content is to the query"""
+        if not content:
+            return 0.0
+            
+        query_words = query.lower().split()
+        content_lower = content.lower()
+        
+        # Count query word matches in content
+        matches = sum(1 for word in query_words if word in content_lower)
+        relevance = matches / len(query_words) if query_words else 0
+        
+        # Bonus for exact phrase matches
+        if query.lower() in content_lower:
+            relevance += 0.3
+            
+        return min(relevance, 1.0)  # Cap at 1.0
+    
+    def _search_primary_source(self, query: str, language: str) -> Optional[Dict]:
+        """Search Route to Germany website"""
         try:
             result = self.route_scraper.search_topic(query, language)
             if result and result.get("summary") and len(result["summary"].strip()) > 50:
@@ -261,7 +460,23 @@ class WebSearchService:
                     "intent": "web_search",
                     "confidence": 0.85
                 }
-            return None
         except Exception as e:
             logger.error(f"Error searching Route to Germany: {e}")
-            return None
+        return None
+    
+    def _search_secondary_source(self, query: str, language: str) -> Optional[Dict]:
+        """Search GettingAroundGermany website as fallback"""
+        try:
+            result = self.getting_around_scraper.search_topic(query, language)
+            if result and result.get("summary") and len(result["summary"].strip()) > 50:
+                return {
+                    "response": result["summary"],
+                    "source": "gettingaroundgermany.info", 
+                    "url": result["url"],
+                    "topic": result["topic"],
+                    "intent": "web_search",
+                    "confidence": 0.80  # Slightly lower confidence for secondary source
+                }
+        except Exception as e:
+            logger.error(f"Error searching GettingAroundGermany: {e}")
+        return None
