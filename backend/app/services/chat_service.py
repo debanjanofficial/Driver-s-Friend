@@ -1,6 +1,7 @@
 from app.database.operations import DatabaseOperations
 from app.nlp.processor import LanguageProcessor
 from app.services.search_service import SearchService
+from app.services.web_scraper import WebSearchService
 from typing import List, Optional, Dict, Any
 
 class ChatService:
@@ -8,6 +9,7 @@ class ChatService:
         self.db_ops = DatabaseOperations()
         self.processor = LanguageProcessor()
         self.search_service = SearchService()
+        self.web_search_service = WebSearchService()
 
     async def process_message(self, message: str, language: str, user_id: Optional[str] = None):
         
@@ -74,12 +76,19 @@ class ChatService:
                 result = offline_response
                 response = result["response"]  # Extract response for storage
             else:
-                response = f"I don't have information on '{message}' right now. Try asking about specific driving rules or regulations."
-                result = {
-                    "response": response,
-                    "intent": "unknown",
-                    "confidence": 0.5
-                }
+                # Try web search as a fallback
+                web_response = self.web_search_service.search_route_to_germany(message, language)
+                if web_response:
+                    result = web_response
+                    response = f"According to routetogermany.com:\n\n{result['response']}\n\nSource: {result['url']}"
+                    result["response"] = response  # Update with formatted response
+                else:
+                    response = f"I don't have information on '{message}' right now. Try asking about specific driving rules or regulations."
+                    result = {
+                        "response": response,
+                        "intent": "unknown",
+                        "confidence": 0.5
+                    }
             
         if user_id:
             await self._store_message(user_id, response, "bot")
