@@ -20,7 +20,9 @@ async def chat_endpoint(request: ChatRequest):
         intent=result["intent"],
         confidence=result["confidence"],
         search_results= result.get("search_results"),
-        suggestions=result.get("suggestions")
+        suggestions=result.get("suggestions"),
+        source=result.get("source"),
+        url=result.get("url")
     )
     
 @router.get("/chat/history/{user_id}")

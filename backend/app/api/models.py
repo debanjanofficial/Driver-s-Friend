@@ -12,6 +12,8 @@ class ChatResponse(BaseModel):
     confidence: float
     search_results: Optional[List[dict]] = None
     suggestions: Optional[List[str]] = None
+    source: Optional[str] = None
+    url: Optional[str] = None
     
 class SearchRequest(BaseModel):
     query: str

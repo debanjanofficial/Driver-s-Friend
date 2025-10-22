@@ -60,65 +60,57 @@ class ChatService:
                 
                 return result
         
-        # 2. If not a search or no search results, fall back to regular processing
-        keywords = self.processor.extract_keywords(message)
+        # 2. If not a search query or no search results, prioritize web search for comprehensive answers
+        # Try web search first for the most up-to-date information
+        web_response = self.web_search_service.search_route_to_germany(message, language)
         
-        # Try database first
-        try:
-            results = self.db_ops.search_regulations(keywords, language)
-        except:
-            results = []  # Database unavailable, use offline knowledge
-        
-        if results:
-            response = results[0]["content"]
-            intent = results[0].get("category", "unknown")
-            result ={
-                "response": response,
-                "intent": intent,
-                "confidence": 0.9,
-                "suggestions": self._generate_related_questions(intent, language)
-            }
+        if web_response:
+            result = web_response
+            # Format the response to clearly indicate it's from the web
+            if language.startswith("de"):
+                response = f"Laut {result['source']}:\n\n{result['response']}\n\nQuelle: {result['url']}"
+            else:
+                response = f"According to {result['source']}:\n\n{result['response']}\n\nSource: {result['url']}"
+            result["response"] = response
         else:
-            # For German language, try offline knowledge base first to provide native German responses
-            if language == "de":
+            # Fallback to database if web search fails
+            keywords = self.processor.extract_keywords(message)
+            try:
+                results = self.db_ops.search_regulations(keywords, language)
+            except:
+                results = []  # Database unavailable, use offline knowledge
+            
+            if results:
+                response = results[0]["content"]
+                intent = results[0].get("category", "unknown")
+                result = {
+                    "response": response,
+                    "intent": intent,
+                    "confidence": 0.8,  # Lower confidence for database vs web
+                    "suggestions": self._generate_related_questions(intent, language)
+                }
+            else:
+                # Final fallback to offline knowledge base
                 offline_response = self._get_offline_response(message, language)
                 if offline_response:
                     result = offline_response
-                    response = result["response"]  # Extract response for storage
-                else:
-                    # Fall back to web search for German if no offline match
-                    web_response = self.web_search_service.search_route_to_germany(message, language)
-                    if web_response:
-                        result = web_response
-                        response = f"Laut {result['source']}:\n\n{result['response']}\n\nQuelle: {result['url']}"
-                        result["response"] = response  # Update with formatted response
+                    # Add note that this is from offline knowledge
+                    if language.startswith("de"):
+                        result["response"] = f"[Offline-Wissensdatenbank] {result['response']}"
                     else:
-                        response = f"Ich habe derzeit keine Informationen zu '{message}'. Versuchen Sie, nach spezifischen Verkehrsregeln zu fragen."
-                        result = {
-                            "response": response,
-                            "intent": "unknown",
-                            "confidence": 0.5
-                        }
-            else:
-                # For English, prioritize web search for comprehensive information
-                web_response = self.web_search_service.search_route_to_germany(message, language)
-                if web_response:
-                    result = web_response
-                    response = f"According to {result['source']}:\n\n{result['response']}\n\nSource: {result['url']}"
-                    result["response"] = response  # Update with formatted response
+                        result["response"] = f"[Offline Knowledge Base] {result['response']}"
+                    response = result["response"]
                 else:
-                    # Use offline knowledge base as fallback for English
-                    offline_response = self._get_offline_response(message, language)
-                    if offline_response:
-                        result = offline_response
-                        response = result["response"]  # Extract response for storage
+                    # No information found anywhere
+                    if language.startswith("de"):
+                        response = f"Ich konnte leider keine Informationen zu '{message}' finden. Versuchen Sie, Ihre Frage anders zu formulieren oder nach spezifischen Verkehrsregeln zu fragen."
                     else:
-                        response = f"I don't have information on '{message}' right now. Try asking about specific driving rules or regulations."
-                        result = {
-                            "response": response,
-                            "intent": "unknown",
-                            "confidence": 0.5
-                        }
+                        response = f"I couldn't find any information about '{message}'. Try rephrasing your question or asking about specific driving rules."
+                    result = {
+                        "response": response,
+                        "intent": "unknown",
+                        "confidence": 0.3
+                    }
             
         if user_id:
             # Add contextual elements to the response

@@ -84,7 +84,9 @@ const ChatWindow: React.FC<Props> = ({exampleQuery}) => {
                 id: (Date.now() + 1).toString(),
                 text: '',
                 sender: 'bot',
-                timestamp: new Date()
+                timestamp: new Date(),
+                source: response.source,
+                url: response.url
             };
             setMessages(prev => [...prev, botMessage]);
             
